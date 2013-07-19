@@ -1,0 +1,2 @@
+V	140716065942Z		01	unknown	/C=US/ST=GA/O=widget/OU=Design/CN=Alice
+V	140716070051Z		02	unknown	/C=US/ST=GA/O=widget/OU=design/CN=Bob

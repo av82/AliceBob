@@ -1,0 +1,63 @@
+bob-- receiver
+
+Alice -- sender
+
+openssl req -x509 -newkey rsa:1024 -keyout ROOTCAKEY.pem -out ROOTCACERT.pem -config openssl.cnf
+
+prootca
+
+
+keytool -genkey -alias Alice -keyalg RSA -keystore Alice.jks
+psalice
+psalice
+
+ keytool -list -v -keystore Alice.jks -storepass psalice
+
+
+keytool -list -v -keystore Bob.jks -storepass pwdbob
+
+pwdbob
+pwdbob
+
+ keytool -list -v -keystore Alice.jks -storepass psalice
+
+
+keytool -certreq -keystore Alice.jks -storepass psalice -alias Alice -file Alice.cert.req
+
+keytool -certreq -keystore Bob.jks -storepass pwdbob -alias Bob -file Bob.cert.req
+
+
+openssl ca -config openssl.cnf -out Alice.pem -infiles Alice.cert.req 
+
+openssl ca -config openssl.cnf -out Bob.pem -infiles Bob.cert.req
+
+
+openssl x509 -outform DER -in Alice.pem -out Alice.cert
+openssl x509 -outform DER -in Bob.pem -out Bob.cert
+openssl x509 -outform DER -in ROOTCACERT.pem -out ROOTCACERT.cert
+
+
+keytool -import -file ROOTCACERT.cert -keystore Alice.jks -storepass psalice -alias ca
+
+keytool -import -file ROOTCACERT.cert -keystore Bob.jks -storepass pwdbob -alias ca
+
+
+
+keytool -import -file Alice.cert -keystore Alice.jks -storepass psalice -alias Alice
+
+keytool -import -file Bob.cert -keystore Bob.jks -storepass pwdbob -alias Bob
+
+
+
+keytool -import -file Alice.cert -keystore Bob.jks -storepass pwdbob -alias Alice
+
+
+keytool -import -file Bob.cert -keystore Alice.jks -storepass psalice -alias Bob
+
+
+//adding ca to truststore.
+
+keytool -import -file ROOTCACERT.cert -alias CAAlias -keystore truststore.jks -storepass catrust
+
+
+

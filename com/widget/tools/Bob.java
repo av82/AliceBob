@@ -1,0 +1,116 @@
+package com.widget.tools;
+import java.io.*;
+import java.net.*;
+import java.security.KeyStore;
+import javax.net.*;
+import javax.net.ssl.*;
+import javax.security.cert.X509Certificate;
+
+public class Bob {
+
+    public static void main(String args[]) throws Exception
+    {
+        
+        //Receiver - Bob 
+       // USAGE: java Bob port passphrase (passphrase for keystore of bob (process of creation of keystores, certificates, pems, jks in command modes is given in scripts.txt).
+       // using JSSE java ssl extension api for calls 
+
+
+        String passphrase = args[1];
+        int port = Integer.parseInt(args[0]);
+        
+        ServerSocket s=null;
+        
+        int bytesRead=0;        
+        int read=0;
+        long size=0;
+        
+        System.out.println("USAGE: java Bob port passphrase");
+
+        try {
+  
+ 
+ System.setProperty("javax.net.ssl.trustStore","truststore.jks");
+            System.setProperty("javax.net.ssl.trustStorePassword","catrust");
+            // register a https protocol handler  - this may be required for previous JDK versions
+            System.setProperty("java.protocol.handler.pkgs","com.sun.net.ssl.internal.www.protocol");
+
+            System.out.println("creating socket...");
+
+            //pass the passphrase received from commandline to open the keystore to setup socket and cast it to SSLServerSocket
+
+            ServerSocketFactory ssf =
+		           Bob.getServerSocketFactory(passphrase);
+	      s = ssf.createServerSocket(port);
+           
+// Assurance for client authentication
+           
+((SSLServerSocket)s).setNeedClientAuth(true);     
+            System.out.println("waiting for connection...");  
+         
+            //wait on client and continue reading byetes into buffer and writing to receiving file  using inputstream, outputstreams
+           // close connection/socket when finished.
+            
+            while(true) {  
+                Socket clientSocket = null;  
+                clientSocket = s.accept();  
+                  
+                InputStream in = clientSocket.getInputStream();  
+                  
+                DataInputStream clientData = new DataInputStream(in);   
+                  
+                String fileName = clientData.readUTF();     
+                OutputStream output = new FileOutputStream(fileName);     
+                size= clientData.readLong();     
+                byte[] buffer = new byte[1024];     
+                while (size > 0 && (bytesRead = clientData.read(buffer, 0, (int)Math.min(buffer.length, size))) != -1)     
+                {     
+                    output.write(buffer, 0, bytesRead);     
+                    size -= bytesRead;     
+                }  
+                  
+                // Closing the FileOutputStream handle  
+                output.close();  
+                System.out.println("Received File.. " + fileName + "  from Alice");
+                break;
+            }
+        	  
+	      
+          
+        
+        } catch (IOException e) {
+                System.out.println("Bob died: " + e.getMessage());
+	          e.printStackTrace();
+        }
+               
+        System.out.println("done...");
+   }
+
+   private static ServerSocketFactory getServerSocketFactory(String passwd) {
+	    SSLServerSocketFactory ssf = null;
+
+	    try {
+		// set up key manager to do server authentication
+		SSLContext ctx;
+		KeyManagerFactory kmf; //instance of keystore manager
+		KeyStore ks;             //instance of keystore 
+		char[] passphrase = passwd.toCharArray(); // received passphrase from command line args is converted to char array
+
+		ctx = SSLContext.getInstance("TLS");          // instances required to process verification of certificates
+		kmf = KeyManagerFactory.getInstance("SunX509"); 
+		ks = KeyStore.getInstance("JKS");
+
+		ks.load(new FileInputStream("Bob.jks"), passphrase); // load the keystore
+		kmf.init(ks, passphrase);
+		ctx.init(kmf.getKeyManagers(), null, null);
+
+		ssf = ctx.getServerSocketFactory();
+		return ssf;
+	    } catch (Exception e) {
+		e.printStackTrace();
+	    }
+	
+	   return null;
+  }
+
+}
