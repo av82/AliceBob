@@ -1,8 +1,21 @@
-import java.net.*;
 import java.io.*;
+import java.net.*;
+import java.security.*;
+import java.util.*;
+import javax.net.*;
 import javax.net.ssl.*;
 
 public class Alice {
+
+private KeyStore AliceKeyStore;
+  
+  /**
+   * KeyStore for storing the CA's public key
+   */
+  private KeyStore CAStore;
+static private SecureRandom secureRandom;
+private SSLContext sslContext;
+
 
 public static void main(String args[])throws Exception
     {
@@ -38,15 +51,20 @@ public static void main(String args[])throws Exception
             // preprocessing of ceritificate generation is performed using openssl and keystore available in scripts.txt
             // generate keypair for ca, ALICe, BOB request to sign their public keys using commands provided by openssl library
             System.setProperty("javax.net.ssl.trustStore","truststore.jks");
-            System.setProperty("javax.net.ssl.trustStorePassword","catrust");
+            System.setProperty("javax.net.ssl.trustStorePassword","catrust");   //password for truststore which has ca certificate
             // register a https protocol handler  - this may be required for previous JDK versions
             System.setProperty("java.protocol.handler.pkgs","com.sun.net.ssl.internal.www.protocol");
             
 
            System.out.println("connecting...");
-           SSLSocketFactory sslFact =
-               (SSLSocketFactory)SSLSocketFactory.getDefault();
-           SSLSocket c = (SSLSocket)sslFact.createSocket(host, port);
+
+
+
+       Alice nalice= new Alice();
+
+      SSLSocket c = nalice.connect( host, port );
+     
+
 
            System.out.println("Handshaking...");
            c.startHandshake();
@@ -63,4 +81,60 @@ System.out.println("Alice died: " + e.getMessage());
 	    e.printStackTrace();
                     }
 }
+
+
+
+  private void setupAliceKeyStore() throws GeneralSecurityException, IOException {
+    AliceKeyStore = KeyStore.getInstance( "JKS" );
+    AliceKeyStore.load( new FileInputStream( "Alice.jks" ),
+                       "psalice".toCharArray());
+  }
+
+ private void setupTruststore() throws GeneralSecurityException, IOException {
+    CAStore = KeyStore.getInstance( "JKS" );
+    CAStore.load( new FileInputStream( "truststore.jks" ), 
+                        "catrust".toCharArray());
+
+
+  }
+
+
+ private void setupSSLContext() throws GeneralSecurityException, IOException {
+    TrustManagerFactory tmf = TrustManagerFactory.getInstance( "SunX509" );
+    tmf.init( CAStore );
+
+    KeyManagerFactory kmf = KeyManagerFactory.getInstance( "SunX509" );
+    kmf.init( AliceKeyStore, "psalice".toCharArray() );
+
+    sslContext = SSLContext.getInstance( "TLS" );
+    sslContext.init( kmf.getKeyManagers(),
+                     tmf.getTrustManagers(),
+                     secureRandom );
+  }
+
+
+private SSLSocket connect( String host, int port ) {
+	    try {
+	      setupTruststore();
+	      setupAliceKeyStore();
+	      setupSSLContext();
+
+	      SSLSocketFactory sf = sslContext.getSocketFactory();
+	      SSLSocket socket = (SSLSocket)sf.createSocket( host, port );
+	       return socket;
+	    }
+	    catch( GeneralSecurityException e ) {
+	        e.printStackTrace();
+	      } catch( IOException e ) {
+	        e.printStackTrace();
+	      }
+	    return null;
+	    
+	    
+ }
+
+
 }
+
+
+
